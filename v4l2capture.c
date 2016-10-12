@@ -399,6 +399,28 @@ static PyObject *Video_device_get_white_balance_temperature(
 #endif
 }
 
+static PyObject *Video_device_set_brightness(
+  Video_device * self,
+  PyObject * args) {
+#ifdef V4L2_CID_EXPOSURE_ABSOLUTE
+  int value;
+  if (!PyArg_ParseTuple(args, "i", &value)) {
+    return NULL;
+  }
+
+  struct v4l2_control ctrl;
+  CLEAR(ctrl);
+  ctrl.id = V4L2_CID_BRIGHTNESS;
+  ctrl.value = value; 
+  if (my_ioctl(self->fd, VIDIOC_S_CTRL, &ctrl)) {
+    return NULL;
+  }
+  return Py_BuildValue("i", ctrl.value);
+#else
+  return NULL;
+#endif
+}
+
 static PyObject *Video_device_set_exposure_absolute(
   Video_device * self,
   PyObject * args) {
@@ -907,6 +929,11 @@ static PyMethodDef Video_device_methods[] = {
    METH_NOARGS,
    "get_exposure_auto() -> autoexp \n\n"
    "Request the video device to get auto exposure value. "},
+  {"set_brightness", (PyCFunction) Video_device_set_brightness,
+   METH_VARARGS,
+   "set_brightness(brightness) -> brightness \n\n"
+   "Request the video device to set brightness to value. The device may "
+   "choose another value than requested and will return its choice. "},
   {"set_exposure_absolute", (PyCFunction) Video_device_set_exposure_absolute,
    METH_VARARGS,
    "set_exposure_absolute(exptime) -> exptime \n\n"
